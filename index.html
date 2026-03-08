@@ -1,0 +1,3444 @@
+<!doctype html>
+<html lang="tr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#1a1916" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://fonts.gstatic.com; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'none';"
+    />
+    <meta http-equiv="X-Content-Type-Options" content="nosniff" />
+    <meta name="referrer" content="no-referrer" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta
+      name="apple-mobile-web-app-status-bar-style"
+      content="black-translucent"
+    />
+    <title>YKS Planlayıcı</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --bg: #f5f4f0;
+        --surface: #ffffff;
+        --border: #e2e0d8;
+        --text: #1a1916;
+        --muted: #8a8880;
+        --tyt: #2d5a27;
+        --tyt-light: #e8f5e3;
+        --ayt: #1a3a6b;
+        --ayt-light: #e3ecf8;
+        --accent: #c94a1e;
+        --done: #6b7280;
+      }
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      button,
+      a {
+        touch-action: manipulation;
+        -webkit-tap-highlight-color: transparent;
+      }
+
+      body {
+        font-family: "DM Sans", sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        min-height: 100vh;
+        font-size: 14px;
+      }
+
+      /* LAYOUT */
+      .app {
+        display: grid;
+        grid-template-columns: 240px 1fr;
+        min-height: 100vh;
+        -webkit-transition: grid-template-columns 0.25s ease;
+        transition: grid-template-columns 0.25s ease;
+      }
+      .app.sidebar-closed {
+        grid-template-columns: 0px 1fr;
+      }
+      .app.sidebar-closed .sidebar {
+        -webkit-transform: translateX(-100%);
+        transform: translateX(-100%);
+      }
+
+      /* SIDEBAR */
+      .sidebar {
+        background: var(--text);
+        color: var(--bg);
+        padding: 60px 20px 32px;
+        position: sticky;
+        top: 0;
+        height: 100vh;
+        overflow-y: auto;
+        overflow-x: hidden;
+        -webkit-overflow-scrolling: touch;
+        display: flex;
+        flex-direction: column;
+        gap: 32px;
+        -webkit-transition: transform 0.25s ease;
+        transition: transform 0.25s ease;
+        z-index: 10;
+      }
+
+      .toggle-btn {
+        position: fixed;
+        top: 16px;
+        left: 16px;
+        z-index: 50;
+        background: var(--text);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        width: 34px;
+        height: 34px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        gap: 4px;
+        -webkit-transition: all 0.2s;
+        transition: all 0.2s;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+      }
+      .toggle-btn:hover {
+        opacity: 0.85;
+      }
+      .toggle-btn span {
+        display: block;
+        width: 16px;
+        height: 2px;
+        background: white;
+        border-radius: 2px;
+        transition: all 0.2s;
+      }
+      .app.sidebar-closed .toggle-btn {
+        left: 16px;
+      }
+      .main {
+        padding: 40px;
+        overflow-y: auto;
+        -webkit-transition: padding 0.25s;
+        transition: padding 0.25s;
+        -webkit-overflow-scrolling: touch;
+        padding-bottom: max(40px, env(safe-area-inset-bottom));
+      }
+      .app.sidebar-closed .main {
+        padding-left: 60px;
+      }
+
+      .logo {
+        font-family: "DM Mono", monospace;
+        font-size: 18px;
+        font-weight: 500;
+        letter-spacing: -0.5px;
+      }
+      .logo span {
+        color: var(--accent);
+      }
+
+      .nav-section {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+      .nav-label {
+        font-family: "DM Mono", monospace;
+        font-size: 10px;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        color: #666;
+        margin-bottom: 6px;
+        padding-left: 8px;
+      }
+
+      .nav-btn {
+        background: none;
+        border: none;
+        color: #ccc;
+        text-align: left;
+        padding: 8px 10px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 13px;
+        font-family: "DM Sans", sans-serif;
+        transition: all 0.15s;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        -webkit-tap-highlight-color: transparent;
+      }
+      .nav-btn:hover {
+        background: rgba(255, 255, 255, 0.08);
+        color: white;
+      }
+      .nav-btn.active {
+        background: rgba(255, 255, 255, 0.12);
+        color: white;
+        font-weight: 500;
+      }
+      .nav-btn .dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        flex-shrink: 0;
+      }
+
+      .stats-box {
+        background: rgba(255, 255, 255, 0.06);
+        border-radius: 10px;
+        padding: 16px;
+        margin-top: auto;
+      }
+      .stats-box .stat {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 8px;
+        font-size: 12px;
+        color: #aaa;
+      }
+      .stats-box .stat strong {
+        color: white;
+        font-family: "DM Mono", monospace;
+      }
+
+      /* MAIN */
+      .main {
+        padding: 40px;
+        overflow-y: auto;
+      }
+
+      .page {
+        display: none;
+      }
+      .page.active {
+        display: block;
+      }
+
+      /* PAGE HEADER */
+      .page-header {
+        margin-bottom: 32px;
+      }
+      .page-title {
+        font-size: 26px;
+        font-weight: 600;
+        letter-spacing: -0.5px;
+        margin-bottom: 6px;
+      }
+      .page-sub {
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      /* TABS */
+      .tabs {
+        display: flex;
+        gap: 4px;
+        margin-bottom: 24px;
+      }
+      .tab-btn {
+        background: none;
+        border: 1.5px solid var(--border);
+        border-radius: 6px;
+        padding: 7px 16px;
+        font-size: 12px;
+        font-family: "DM Mono", monospace;
+        cursor: pointer;
+        transition: all 0.15s;
+        color: var(--muted);
+      }
+      .tab-btn:hover {
+        border-color: var(--text);
+        color: var(--text);
+      }
+      .tab-btn.active.tyt {
+        background: var(--tyt);
+        border-color: var(--tyt);
+        color: white;
+      }
+      .tab-btn.active.ayt {
+        background: var(--ayt);
+        border-color: var(--ayt);
+        color: white;
+      }
+
+      /* WEEKLY GRID */
+      .week-grid-outer {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        padding-bottom: 4px;
+        margin: 0 -2px;
+      }
+      .week-grid-wrap {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        gap: 10px;
+        min-width: 560px;
+      }
+      .day-col {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        min-width: 110px;
+      }
+      .day-col-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 6px 4px;
+        border-bottom: 1.5px solid var(--border);
+        margin-bottom: 4px;
+      }
+      .day-name {
+        font-family: "DM Mono", monospace;
+        font-size: 11px;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: var(--text);
+      }
+      .add-slot-btn {
+        background: none;
+        border: 1.5px solid var(--border);
+        border-radius: 5px;
+        width: 22px;
+        height: 22px;
+        font-size: 14px;
+        cursor: pointer;
+        color: var(--muted);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.15s;
+        line-height: 1;
+        padding: 0;
+      }
+      .add-slot-btn:hover {
+        background: var(--text);
+        color: white;
+        border-color: var(--text);
+      }
+      .day-slots {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+      }
+      .day-empty {
+        border: 1.5px dashed var(--border);
+        border-radius: 8px;
+        padding: 16px 8px;
+        text-align: center;
+        font-size: 11px;
+        color: var(--border);
+        cursor: pointer;
+        transition: all 0.15s;
+      }
+      .day-empty:hover {
+        border-color: var(--muted);
+        color: var(--muted);
+      }
+      .slot-row {
+        display: flex;
+        flex-direction: column;
+        gap: 3px;
+      }
+      .slot-time {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 2px;
+      }
+      .slot-time span {
+        font-family: "DM Mono", monospace;
+        font-size: 10px;
+        color: var(--muted);
+        font-weight: 500;
+      }
+      .slot-del-time {
+        background: none;
+        border: none;
+        font-size: 12px;
+        color: var(--border);
+        cursor: pointer;
+        line-height: 1;
+        padding: 0 2px;
+        display: none;
+        transition: color 0.15s;
+      }
+      .slot-row:hover .slot-del-time {
+        display: block;
+      }
+      .slot-del-time:hover {
+        color: var(--accent);
+      }
+
+      .cell {
+        border: 1.5px solid var(--border);
+        border-radius: 8px;
+        min-height: 52px;
+        padding: 6px 8px;
+        cursor: pointer;
+        transition: all 0.15s;
+        background: var(--surface);
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        gap: 3px;
+        -webkit-tap-highlight-color: transparent;
+      }
+      .cell:hover {
+        border-color: var(--muted);
+      }
+      .cell.cell-empty {
+        align-items: center;
+        justify-content: center;
+      }
+      .cell-plus {
+        font-size: 18px;
+        color: var(--border);
+      }
+      .cell-empty:hover .cell-plus {
+        color: var(--muted);
+      }
+      .cell.filled-tyt {
+        background: var(--tyt-light);
+        border-color: var(--tyt);
+      }
+      .cell.filled-ayt {
+        background: var(--ayt-light);
+        border-color: var(--ayt);
+      }
+      .cell.done {
+        opacity: 0.5;
+      }
+      .cell .cell-subject {
+        font-size: 11px;
+        font-weight: 600;
+        line-height: 1.3;
+      }
+      .cell .cell-topic {
+        font-size: 10px;
+        color: var(--muted);
+        line-height: 1.3;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .cell .cell-hours {
+        font-family: "DM Mono", monospace;
+        font-size: 9px;
+        color: var(--muted);
+      }
+      .cell .done-mark {
+        position: absolute;
+        top: 4px;
+        right: 6px;
+        font-size: 10px;
+        color: var(--done);
+      }
+      .cell .del-btn {
+        position: absolute;
+        top: 3px;
+        right: 4px;
+        background: none;
+        border: none;
+        cursor: pointer;
+        font-size: 12px;
+        color: var(--muted);
+        display: none;
+        line-height: 1;
+      }
+      .cell:hover .del-btn {
+        display: block;
+      }
+      .cell.filled-tyt:hover .del-btn,
+      .cell.filled-ayt:hover .del-btn {
+        display: block;
+      }
+
+      .reset-plan-btn {
+        background: none;
+        border: 1.5px solid var(--border);
+        border-radius: 7px;
+        padding: 7px 14px;
+        font-size: 12px;
+        font-family: "DM Sans", sans-serif;
+        color: var(--muted);
+        cursor: pointer;
+        transition: all 0.15s;
+      }
+      .reset-plan-btn:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+
+      /* QUICK TIME BTNS */
+      .quick-time-btn {
+        background: var(--bg);
+        border: 1.5px solid var(--border);
+        border-radius: 6px;
+        padding: 5px 10px;
+        font-size: 11px;
+        font-family: "DM Mono", monospace;
+        cursor: pointer;
+        color: var(--muted);
+        transition: all 0.15s;
+      }
+      .quick-time-btn:hover {
+        background: var(--text);
+        color: white;
+        border-color: var(--text);
+      }
+
+      /* MODAL */
+      .modal-bg {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.4);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 100;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.2s;
+      }
+      .modal-bg.open {
+        opacity: 1;
+        pointer-events: all;
+      }
+      .modal {
+        background: var(--surface);
+        border-radius: 14px;
+        padding: 28px;
+        width: 360px;
+        max-width: 92vw;
+        max-height: 90vh;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        transform: translateY(10px);
+        -webkit-transition: transform 0.2s;
+        transition: transform 0.2s;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+      }
+      .modal-bg.open .modal {
+        transform: translateY(0);
+      }
+      .modal h3 {
+        font-size: 16px;
+        margin-bottom: 20px;
+      }
+      .form-row {
+        margin-bottom: 14px;
+      }
+      .form-row label {
+        font-size: 11px;
+        font-family: "DM Mono", monospace;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: var(--muted);
+        display: block;
+        margin-bottom: 5px;
+      }
+      .form-row select,
+      .form-row input {
+        width: 100%;
+        border: 1.5px solid var(--border);
+        border-radius: 7px;
+        padding: 9px 12px;
+        font-size: 16px;
+        font-family: "DM Sans", sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        outline: none;
+        -webkit-transition: border 0.15s;
+        transition: border 0.15s;
+        -webkit-appearance: none;
+      }
+      .form-row select:focus,
+      .form-row input:focus {
+        border-color: var(--text);
+      }
+      .form-type {
+        display: flex;
+        gap: 8px;
+      }
+      .type-btn {
+        flex: 1;
+        padding: 8px;
+        border-radius: 7px;
+        border: 1.5px solid var(--border);
+        font-size: 12px;
+        font-family: "DM Mono", monospace;
+        cursor: pointer;
+        transition: all 0.15s;
+        background: var(--bg);
+        color: var(--muted);
+      }
+      .type-btn.sel-tyt {
+        background: var(--tyt);
+        border-color: var(--tyt);
+        color: white;
+      }
+      .type-btn.sel-ayt {
+        background: var(--ayt);
+        border-color: var(--ayt);
+        color: white;
+      }
+      .modal-actions {
+        display: flex;
+        gap: 8px;
+        margin-top: 20px;
+      }
+      .btn-save {
+        flex: 1;
+        background: var(--text);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        padding: 11px;
+        font-size: 13px;
+        font-family: "DM Sans", sans-serif;
+        font-weight: 500;
+        cursor: pointer;
+        transition: opacity 0.15s;
+      }
+      .btn-save:hover {
+        opacity: 0.8;
+      }
+      .btn-cancel {
+        background: none;
+        border: 1.5px solid var(--border);
+        border-radius: 8px;
+        padding: 11px 16px;
+        font-size: 13px;
+        font-family: "DM Sans", sans-serif;
+        cursor: pointer;
+        color: var(--muted);
+        transition: all 0.15s;
+      }
+      .btn-cancel:hover {
+        border-color: var(--text);
+        color: var(--text);
+      }
+
+      /* SUBJECTS PAGE */
+      .subjects-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 16px;
+      }
+      .subject-card {
+        background: var(--surface);
+        border: 1.5px solid var(--border);
+        border-radius: 12px;
+        padding: 20px;
+      }
+      .subject-card-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 14px;
+      }
+      .subject-card-title {
+        font-weight: 600;
+        font-size: 14px;
+      }
+      .subject-badge {
+        font-family: "DM Mono", monospace;
+        font-size: 10px;
+        padding: 3px 8px;
+        border-radius: 4px;
+        letter-spacing: 1px;
+      }
+      .badge-tyt {
+        background: var(--tyt-light);
+        color: var(--tyt);
+      }
+      .badge-ayt {
+        background: var(--ayt-light);
+        color: var(--ayt);
+      }
+
+      .progress-bar {
+        height: 4px;
+        background: var(--border);
+        border-radius: 99px;
+        margin-bottom: 10px;
+      }
+      .progress-fill {
+        height: 100%;
+        border-radius: 99px;
+        transition: width 0.4s;
+      }
+      .fill-tyt {
+        background: var(--tyt);
+      }
+      .fill-ayt {
+        background: var(--ayt);
+      }
+      .progress-text {
+        font-size: 11px;
+        color: var(--muted);
+        font-family: "DM Mono", monospace;
+      }
+
+      .topics-list {
+        margin-top: 14px;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+      .topic-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 7px 10px;
+        border-radius: 7px;
+        background: var(--bg);
+        font-size: 12px;
+        transition: background 0.15s;
+      }
+      .topic-item:hover {
+        background: var(--border);
+      }
+      .topic-check {
+        width: 16px;
+        height: 16px;
+        border-radius: 4px;
+        border: 1.5px solid var(--border);
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 9px;
+        transition: all 0.15s;
+        cursor: pointer;
+      }
+      .topic-item.checked .topic-check {
+        background: var(--tyt);
+        border-color: var(--tyt);
+        color: white;
+      }
+      .topic-item.checked-ayt .topic-check {
+        background: var(--ayt);
+        border-color: var(--ayt);
+        color: white;
+      }
+      .topic-item.checked .topic-name,
+      .topic-item.checked-ayt .topic-name {
+        color: var(--muted);
+        text-decoration: line-through;
+      }
+      .topic-name {
+        flex: 1;
+        cursor: pointer;
+      }
+      .topic-del {
+        background: none;
+        border: none;
+        color: var(--border);
+        cursor: pointer;
+        font-size: 15px;
+        line-height: 1;
+        padding: 0 2px;
+        flex-shrink: 0;
+        transition: color 0.15s;
+        display: none;
+      }
+      .topic-item:hover .topic-del {
+        display: block;
+      }
+      .topic-del:hover {
+        color: var(--accent);
+      }
+
+      .add-topic-row {
+        display: flex;
+        gap: 6px;
+        margin-top: 10px;
+      }
+      .add-topic-row input {
+        flex: 1;
+        border: 1.5px solid var(--border);
+        border-radius: 7px;
+        padding: 7px 10px;
+        font-size: 12px;
+        font-family: "DM Sans", sans-serif;
+        background: var(--bg);
+        outline: none;
+        transition: border 0.15s;
+      }
+      .add-topic-row input:focus {
+        border-color: var(--text);
+      }
+      .add-topic-row input::placeholder {
+        color: var(--border);
+      }
+      .add-topic-row button {
+        background: var(--text);
+        color: white;
+        border: none;
+        border-radius: 7px;
+        padding: 7px 12px;
+        font-size: 13px;
+        cursor: pointer;
+        transition: opacity 0.15s;
+      }
+      .add-topic-row button:hover {
+        opacity: 0.7;
+      }
+
+      /* NOTES PAGE */
+      .notes-area {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+      }
+      .note-block {
+        background: var(--surface);
+        border: 1.5px solid var(--border);
+        border-radius: 12px;
+        padding: 20px;
+      }
+      .note-block-title {
+        font-size: 12px;
+        font-family: "DM Mono", monospace;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        margin-bottom: 12px;
+      }
+      .note-block textarea {
+        width: 100%;
+        min-height: 160px;
+        border: 1.5px solid var(--border);
+        border-radius: 8px;
+        padding: 12px;
+        font-size: 16px;
+        font-family: "DM Sans", sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        resize: vertical;
+        outline: none;
+        -webkit-transition: border 0.15s;
+        transition: border 0.15s;
+        line-height: 1.6;
+        -webkit-appearance: none;
+      }
+      .note-block textarea:focus {
+        border-color: var(--text);
+      }
+      .save-note-btn {
+        margin-top: 10px;
+        background: none;
+        border: 1.5px solid var(--border);
+        border-radius: 7px;
+        padding: 7px 14px;
+        font-size: 12px;
+        font-family: "DM Sans", sans-serif;
+        cursor: pointer;
+        color: var(--muted);
+        transition: all 0.15s;
+      }
+      .save-note-btn:hover {
+        border-color: var(--text);
+        color: var(--text);
+      }
+      .save-note-btn.saved {
+        border-color: var(--tyt);
+        color: var(--tyt);
+      }
+
+      /* GOALS */
+      .goals-list {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        max-width: 600px;
+      }
+      .goal-item {
+        background: var(--surface);
+        border: 1.5px solid var(--border);
+        border-radius: 10px;
+        padding: 14px 16px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .goal-check {
+        width: 20px;
+        height: 20px;
+        border-radius: 6px;
+        border: 1.5px solid var(--border);
+        flex-shrink: 0;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 11px;
+        transition: all 0.15s;
+      }
+      .goal-item.done-goal .goal-check {
+        background: var(--tyt);
+        border-color: var(--tyt);
+        color: white;
+      }
+      .goal-item.done-goal .goal-text {
+        text-decoration: line-through;
+        color: var(--muted);
+      }
+      .goal-text {
+        flex: 1;
+        font-size: 13px;
+      }
+      .goal-del {
+        background: none;
+        border: none;
+        color: var(--muted);
+        cursor: pointer;
+        font-size: 16px;
+        padding: 0 4px;
+      }
+      .add-goal-row {
+        display: flex;
+        gap: 8px;
+        max-width: 600px;
+        margin-top: 4px;
+      }
+      .add-goal-row input {
+        flex: 1;
+        border: 1.5px solid var(--border);
+        border-radius: 8px;
+        padding: 10px 14px;
+        font-size: 13px;
+        font-family: "DM Sans", sans-serif;
+        background: var(--surface);
+        outline: none;
+        transition: border 0.15s;
+      }
+      .add-goal-row input:focus {
+        border-color: var(--text);
+      }
+      .add-goal-row button {
+        background: var(--text);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        padding: 10px 18px;
+        font-size: 13px;
+        font-family: "DM Sans", sans-serif;
+        font-weight: 500;
+        cursor: pointer;
+      }
+
+      /* İSTATİSTİK */
+      .kpi-row {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        gap: 10px;
+        margin-bottom: 24px;
+      }
+      .kpi-card {
+        background: var(--surface);
+        border: 1.5px solid var(--border);
+        border-radius: 12px;
+        padding: 14px 10px;
+        text-align: center;
+      }
+      .kpi-icon {
+        font-size: 16px;
+        margin-bottom: 6px;
+        font-weight: 700;
+        font-family: "DM Mono", monospace;
+      }
+      .kpi-val {
+        font-family: "DM Mono", monospace;
+        font-size: 22px;
+        font-weight: 700;
+        line-height: 1;
+        margin-bottom: 4px;
+      }
+      .kpi-val-sm {
+        font-size: 15px !important;
+      }
+      .kpi-unit {
+        font-size: 11px;
+        color: var(--muted);
+        font-weight: 400;
+      }
+      .kpi-label {
+        font-size: 10px;
+        color: var(--muted);
+        letter-spacing: 0.5px;
+      }
+      .charts-row {
+        display: flex;
+        gap: 16px;
+        margin-bottom: 16px;
+      }
+      .charts-2col > .chart-card {
+        flex: 1;
+        min-width: 0;
+      }
+      .chart-card {
+        background: var(--surface);
+        border: 1.5px solid var(--border);
+        border-radius: 14px;
+        padding: 20px;
+        flex: 1;
+        min-width: 0;
+      }
+      .chart-card-wide {
+        flex: 1;
+      }
+      .chart-card-title {
+        font-family: "DM Mono", monospace;
+        font-size: 10px;
+        letter-spacing: 1.5px;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin-bottom: 16px;
+      }
+      .chart-card canvas {
+        width: 100% !important;
+        display: block;
+      }
+      .chart-legend {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 12px;
+      }
+      .legend-item {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        font-size: 11px;
+        color: var(--muted);
+      }
+      .legend-dot {
+        width: 9px;
+        height: 9px;
+        border-radius: 3px;
+        flex-shrink: 0;
+      }
+      .stats-empty {
+        text-align: center;
+        padding: 60px 20px;
+        color: var(--muted);
+        border: 1.5px dashed var(--border);
+        border-radius: 14px;
+        font-size: 14px;
+      }
+      .stats-empty span {
+        font-size: 32px;
+        display: block;
+        margin-bottom: 10px;
+      }
+
+      /* ALAN & DENEME */
+      .alan-btn {
+        background: var(--bg);
+        border: 1.5px solid var(--border);
+        border-radius: 10px;
+        padding: 14px 12px;
+        cursor: pointer;
+        text-align: left;
+        transition: all 0.15s;
+        font-family: "DM Sans", sans-serif;
+      }
+      .alan-btn:hover {
+        border-color: var(--ayt);
+        background: var(--ayt-light);
+      }
+      .alan-btn-title {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--text);
+        margin-bottom: 4px;
+      }
+      .alan-btn-sub {
+        font-size: 10px;
+        color: var(--muted);
+        margin-bottom: 6px;
+        line-height: 1.4;
+      }
+      .alan-btn-total {
+        font-family: "DM Mono", monospace;
+        font-size: 11px;
+        color: var(--ayt);
+        font-weight: 500;
+      }
+
+      /* TOAST */
+      .deneme-new-btn {
+        background: var(--tyt);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        padding: 9px 16px;
+        font-size: 12px;
+        font-family: "DM Mono", monospace;
+        cursor: pointer;
+        transition: opacity 0.15s;
+        letter-spacing: 0.5px;
+      }
+      .deneme-new-btn:hover {
+        opacity: 0.8;
+      }
+      .deneme-new-btn.ayt {
+        background: var(--ayt);
+      }
+      .deneme-card {
+        background: var(--surface);
+        border: 1.5px solid var(--border);
+        border-radius: 14px;
+        padding: 24px;
+        margin-bottom: 20px;
+      }
+      .deneme-card-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 20px;
+        gap: 12px;
+        flex-wrap: wrap;
+      }
+      .deneme-card-left {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+      .deneme-badge {
+        font-family: "DM Mono", monospace;
+        font-size: 11px;
+        font-weight: 500;
+        padding: 4px 10px;
+        border-radius: 6px;
+        letter-spacing: 1px;
+        flex-shrink: 0;
+      }
+      .deneme-badge.tyt {
+        background: var(--tyt-light);
+        color: var(--tyt);
+      }
+      .deneme-badge.ayt {
+        background: var(--ayt-light);
+        color: var(--ayt);
+      }
+      .deneme-title-input {
+        font-size: 15px;
+        font-weight: 600;
+        font-family: "DM Sans", sans-serif;
+        border: none;
+        background: transparent;
+        color: var(--text);
+        outline: none;
+        min-width: 120px;
+        max-width: 260px;
+        border-bottom: 1.5px solid transparent;
+        transition: border 0.15s;
+      }
+      .deneme-title-input:focus {
+        border-bottom-color: var(--border);
+      }
+      .deneme-meta {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .deneme-date {
+        font-size: 11px;
+        color: var(--muted);
+        font-family: "DM Mono", monospace;
+      }
+      .deneme-del-btn {
+        background: none;
+        border: 1.5px solid var(--border);
+        border-radius: 7px;
+        padding: 5px 10px;
+        font-size: 12px;
+        cursor: pointer;
+        color: var(--muted);
+        transition: all 0.15s;
+      }
+      .deneme-del-btn:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+      .deneme-subjects-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 18px;
+      }
+      .deneme-table-wrap {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        margin-bottom: 18px;
+      }
+      .deneme-table-wrap .deneme-subjects-table {
+        margin-bottom: 0;
+        min-width: 420px;
+      }
+      .deneme-subjects-table th {
+        font-family: "DM Mono", monospace;
+        font-size: 10px;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        color: var(--muted);
+        text-align: center;
+        padding: 6px 4px;
+        border-bottom: 1.5px solid var(--border);
+      }
+      .deneme-subjects-table th:first-child {
+        text-align: left;
+        padding-left: 4px;
+      }
+      .deneme-subjects-table td {
+        padding: 5px 4px;
+        vertical-align: middle;
+      }
+      .deneme-subjects-table tr:not(:last-child) td {
+        border-bottom: 1px solid var(--border);
+      }
+      .deneme-subject-name {
+        font-size: 12px;
+        font-weight: 500;
+        padding-left: 4px;
+        white-space: nowrap;
+      }
+      .deneme-num-input {
+        width: 52px;
+        text-align: center;
+        border: 1.5px solid var(--border);
+        border-radius: 6px;
+        padding: 5px 2px;
+        font-size: 12px;
+        font-family: "DM Mono", monospace;
+        background: var(--bg);
+        color: var(--text);
+        outline: none;
+        transition: border 0.15s;
+        display: block;
+        margin: 0 auto;
+        -moz-appearance: textfield;
+      }
+      .deneme-num-input::-webkit-outer-spin-button,
+      .deneme-num-input::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+      }
+      .deneme-num-input:focus {
+        border-color: var(--text);
+      }
+      .deneme-net-cell {
+        text-align: center;
+        font-family: "DM Mono", monospace;
+        font-size: 13px;
+        font-weight: 600;
+      }
+      .net-positive {
+        color: var(--tyt);
+      }
+      .net-negative {
+        color: var(--accent);
+      }
+      .net-zero {
+        color: var(--muted);
+      }
+      .deneme-summary {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        padding: 14px;
+        background: var(--bg);
+        border-radius: 10px;
+      }
+      .deneme-summary-item {
+        flex: 1;
+        min-width: 70px;
+        text-align: center;
+        padding: 10px 8px;
+        background: var(--surface);
+        border-radius: 8px;
+        border: 1.5px solid var(--border);
+      }
+      .deneme-summary-item .s-label {
+        font-family: "DM Mono", monospace;
+        font-size: 9px;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin-bottom: 4px;
+      }
+      .deneme-summary-item .s-val {
+        font-family: "DM Mono", monospace;
+        font-size: 18px;
+        font-weight: 600;
+      }
+      .s-val.col-d {
+        color: var(--tyt);
+      }
+      .s-val.col-y {
+        color: var(--accent);
+      }
+      .s-val.col-b {
+        color: var(--muted);
+      }
+      .s-val.col-net {
+        color: var(--text);
+        font-size: 22px;
+      }
+      .deneme-empty {
+        text-align: center;
+        padding: 60px 20px;
+        color: var(--muted);
+        font-size: 14px;
+        border: 1.5px dashed var(--border);
+        border-radius: 14px;
+      }
+      .deneme-empty span {
+        font-size: 32px;
+        display: block;
+        margin-bottom: 10px;
+      }
+
+      /* TOAST */
+      .toast {
+        position: fixed;
+        bottom: 28px;
+        left: 50%;
+        transform: translateX(-50%) translateY(60px);
+        background: var(--text);
+        color: white;
+        padding: 10px 20px;
+        border-radius: 8px;
+        font-size: 13px;
+        transition: transform 0.25s;
+        z-index: 200;
+        pointer-events: none;
+      }
+      .toast.show {
+        transform: translateX(-50%) translateY(0);
+      }
+
+      /* ══════════════════════════════════════════
+     RESPONSIVE — Tablet & Mobil
+     Breakpoints:
+       1024px → tablet yatay
+        768px → tablet dikey / büyük telefon yatay
+        480px → telefon dikey
+     ══════════════════════════════════════════ */
+
+      /* ── Tablet yatay (≤1024px) ── */
+      @media (max-width: 1024px) {
+        .main {
+          padding: 28px 24px;
+        }
+        .kpi-row {
+          grid-template-columns: repeat(4, 1fr);
+        }
+        .stats-grid {
+          grid-template-columns: 1fr 1fr;
+        }
+        .subjects-grid {
+          grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+        }
+      }
+
+      /* ── Tablet dikey / büyük telefon yatay (≤768px) ── */
+      @media (max-width: 768px) {
+        /* Sidebar overlay modu */
+        .app {
+          grid-template-columns: 1fr;
+        }
+        .app.sidebar-closed {
+          grid-template-columns: 1fr;
+        }
+        .sidebar {
+          position: fixed;
+          left: 0;
+          top: 0;
+          height: 100vh;
+          width: 240px;
+          transform: translateX(0);
+          -webkit-transform: translateX(0);
+          z-index: 100;
+          box-shadow: 4px 0 24px rgba(0, 0, 0, 0.18);
+        }
+        .app.sidebar-closed .sidebar {
+          transform: translateX(-100%);
+          -webkit-transform: translateX(-100%);
+          box-shadow: none;
+        }
+        /* Sidebar açıkken içerik karart */
+        .sidebar-overlay {
+          display: none;
+          position: fixed;
+          inset: 0;
+          background: rgba(0, 0, 0, 0.35);
+          z-index: 99;
+          -webkit-backdrop-filter: blur(2px);
+          backdrop-filter: blur(2px);
+        }
+        .sidebar-overlay.active {
+          display: block;
+        }
+
+        .main {
+          padding: 20px 16px;
+        }
+        .app.sidebar-closed .main {
+          padding: 20px 16px;
+        }
+        .toggle-btn {
+          left: 14px;
+          top: 14px;
+        }
+
+        /* Haftalık plan */
+        .week-grid-wrap {
+          grid-template-columns: repeat(7, minmax(96px, 1fr));
+          gap: 6px;
+        }
+        .day-header {
+          font-size: 10px;
+          padding: 6px 4px;
+        }
+        .cell {
+          min-height: 44px;
+          padding: 5px 6px;
+        }
+        .cell-subject {
+          font-size: 10px;
+        }
+        .cell-topic,
+        .cell-hours {
+          font-size: 9px;
+        }
+        .add-slot-btn {
+          font-size: 16px;
+          width: 26px;
+          height: 26px;
+        }
+
+        /* Sayfa başlığı */
+        .page-header {
+          flex-direction: column !important;
+          align-items: flex-start !important;
+          gap: 10px !important;
+        }
+        .page-title {
+          font-size: 20px;
+        }
+
+        /* Notlar */
+        .notes-area {
+          grid-template-columns: 1fr;
+          gap: 14px;
+        }
+
+        /* İstatistik */
+        .kpi-row {
+          grid-template-columns: repeat(4, 1fr);
+          gap: 8px;
+        }
+        .kpi-card {
+          padding: 10px 8px;
+        }
+        .kpi-val {
+          font-size: 18px;
+        }
+        .charts-row {
+          flex-direction: column;
+        }
+        .charts-2col {
+          flex-direction: column;
+        }
+
+        /* Modal */
+        .modal {
+          width: calc(100vw - 32px) !important;
+          max-width: 480px;
+          padding: 20px;
+        }
+
+        /* Deneme tablosu */
+        .deneme-table-wrap {
+          font-size: 11px;
+        }
+        .deneme-num-input {
+          width: 42px;
+        }
+      }
+
+      /* ── Landscape telefon (max-height:500px, yatay) ── */
+      @media (max-height: 500px) and (orientation: landscape) {
+        .sidebar {
+          padding-top: 50px;
+          gap: 16px;
+        }
+        .logo {
+          font-size: 16px;
+        }
+        .stats-box {
+          display: none;
+        }
+        .main {
+          padding: 14px 16px;
+        }
+        .toggle-btn {
+          top: 10px;
+          left: 10px;
+        }
+        .modal {
+          max-height: 90vh;
+          overflow-y: auto;
+        }
+      }
+
+      /* ── Telefon dikey (≤480px) ── */
+      @media (max-width: 480px) {
+        /* Haftalık plan — 3'lü görünüm + yatay scroll */
+        .week-grid-wrap {
+          grid-template-columns: repeat(7, minmax(82px, 1fr));
+          gap: 5px;
+        }
+        .day-col {
+          min-width: 82px;
+        }
+
+        /* Sekmeler */
+        .tabs {
+          gap: 3px;
+        }
+        .tab-btn {
+          padding: 5px 10px;
+          font-size: 11px;
+        }
+
+        /* KPI 2'li */
+        .kpi-row {
+          grid-template-columns: repeat(2, 1fr);
+          gap: 8px;
+        }
+        .kpi-val {
+          font-size: 20px;
+        }
+        .kpi-val-sm {
+          font-size: 13px !important;
+        }
+
+        /* Konu takibi */
+        .subjects-grid {
+          grid-template-columns: 1fr;
+        }
+
+        /* Hedefler */
+        .goals-list,
+        .add-goal-row {
+          max-width: 100%;
+        }
+
+        /* Notlar textarea */
+        .note-block textarea {
+          min-height: 100px;
+        }
+
+        /* Deneme kartı */
+        .deneme-card-left {
+          flex-direction: column;
+          align-items: flex-start;
+        }
+        .deneme-meta {
+          flex-wrap: wrap;
+        }
+        .deneme-num-input {
+          width: 38px;
+          padding: 3px 1px;
+          font-size: 11px;
+        }
+
+        /* Sayfa padding */
+        .main {
+          padding: 14px 10px;
+        }
+        .page-title {
+          font-size: 18px;
+        }
+        .page-sub {
+          font-size: 12px;
+        }
+
+        /* Modal tam ekran */
+        .modal {
+          width: calc(100vw - 20px) !important;
+          padding: 16px;
+          border-radius: 12px;
+        }
+        .modal h3 {
+          font-size: 15px;
+        }
+        .form-row label {
+          font-size: 11px;
+        }
+        .form-row input,
+        .form-row select {
+          font-size: 14px;
+          padding: 8px 10px;
+        }
+
+        /* İstatistik grafik kartları */
+        .chart-card {
+          padding: 14px 10px;
+        }
+        .chart-card-title {
+          font-size: 9px;
+        }
+      }
+
+      /* ── Çok küçük ekran (≤360px) ── */
+      @media (max-width: 360px) {
+        .week-grid-wrap {
+          grid-template-columns: repeat(7, minmax(72px, 1fr));
+          gap: 4px;
+        }
+        .day-col {
+          min-width: 72px;
+        }
+        .main {
+          padding: 12px 8px;
+        }
+        .kpi-row {
+          gap: 6px;
+        }
+        .kpi-card {
+          padding: 8px 6px;
+        }
+        .kpi-val {
+          font-size: 17px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <button
+      class="toggle-btn"
+      id="toggle-btn"
+      onclick="toggleSidebar()"
+      title="Menüyü aç/kapat"
+      aria-label="Menüyü aç/kapat"
+      aria-expanded="true"
+    >
+      <span></span><span></span><span></span>
+    </button>
+    <div
+      class="sidebar-overlay"
+      id="sidebar-overlay"
+      onclick="toggleSidebar()"
+    ></div>
+
+    <div class="app" id="app">
+      <!-- SIDEBAR -->
+      <aside class="sidebar" role="navigation" aria-label="Ana menü">
+        <div class="logo">YKS<span>.</span>plan</div>
+        <div class="nav-section">
+          <div class="nav-label">Görünüm</div>
+          <button class="nav-btn active" onclick="showPage('hafta', this)">
+            <span class="dot" style="background: #8abaff"></span> Haftalık Plan
+          </button>
+          <button class="nav-btn" onclick="showPage('konular', this)">
+            <span class="dot" style="background: #8af0a0"></span> Konu Takibi
+          </button>
+          <button class="nav-btn" onclick="showPage('hedefler', this)">
+            <span class="dot" style="background: #f0c060"></span> Hedefler
+          </button>
+          <button class="nav-btn" onclick="showPage('notlar', this)">
+            <span class="dot" style="background: #f08080"></span> Notlar
+          </button>
+          <button class="nav-btn" onclick="showPage('denemeler', this)">
+            <span class="dot" style="background: #c084fc"></span> Denemeler
+          </button>
+          <button class="nav-btn" onclick="showPage('istatistik', this)">
+            <span class="dot" style="background: #fb923c"></span> İstatistik
+          </button>
+        </div>
+        <div class="stats-box" id="sidebar-stats">
+          <div class="stat">
+            <span>Bu hafta TYT</span><strong id="stat-tyt">0s</strong>
+          </div>
+          <div class="stat">
+            <span>Bu hafta AYT</span><strong id="stat-ayt">0s</strong>
+          </div>
+          <div class="stat">
+            <span>Tamamlanan</span><strong id="stat-done">%0</strong>
+          </div>
+        </div>
+      </aside>
+
+      <!-- MAIN -->
+      <main class="main" role="main">
+        <!-- HAFTALIK PLAN -->
+        <div class="page active" id="page-hafta">
+          <div
+            class="page-header"
+            style="
+              display: flex;
+              align-items: flex-start;
+              justify-content: space-between;
+              flex-wrap: wrap;
+              gap: 12px;
+              margin-bottom: 20px;
+            "
+          >
+            <div>
+              <div class="page-title">Haftalık Çizelge</div>
+              <div class="page-sub">
+                Her güne saat ekle, derse tıkla tamamlandı işaretle.
+              </div>
+            </div>
+            <div
+              style="
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                flex-wrap: wrap;
+              "
+            >
+              <div class="tabs" style="margin: 0">
+                <button
+                  class="tab-btn active tyt"
+                  onclick="switchWeekView('tyt', this)"
+                >
+                  TYT
+                </button>
+                <button
+                  class="tab-btn ayt"
+                  onclick="switchWeekView('ayt', this)"
+                >
+                  AYT
+                </button>
+                <button
+                  class="tab-btn"
+                  onclick="switchWeekView('all', this)"
+                  style="color: var(--muted)"
+                >
+                  Tümü
+                </button>
+              </div>
+              <button onclick="resetPlan()" class="reset-plan-btn">
+                ↺ Sıfırla
+              </button>
+            </div>
+          </div>
+          <div class="week-grid-outer"><div id="weekly-grid"></div></div>
+        </div>
+
+        <!-- KONU TAKİBİ -->
+        <div class="page" id="page-konular">
+          <div class="page-header">
+            <div class="page-title">Konu Takibi</div>
+            <div class="page-sub">Konuları tamamla, ilerlemeyi takip et.</div>
+          </div>
+          <div class="subjects-grid" id="subjects-grid"></div>
+        </div>
+
+        <!-- İSTATİSTİK -->
+        <div class="page" id="page-istatistik">
+          <div class="page-header">
+            <div class="page-title">İstatistik</div>
+            <div class="page-sub">Haftalık planından otomatik üretilir.</div>
+          </div>
+          <div id="stats-content"></div>
+        </div>
+
+        <!-- HEDEFLER -->
+        <div class="page" id="page-hedefler">
+          <div class="page-header">
+            <div class="page-title">Hedefler</div>
+            <div class="page-sub">Kısa ve uzun vadeli hedeflerini belirle.</div>
+          </div>
+          <div class="goals-list" id="goals-list"></div>
+          <div class="add-goal-row" style="margin-top: 14px">
+            <input
+              id="new-goal-input"
+              placeholder="Yeni hedef ekle..."
+              onkeydown="if (event.key === 'Enter') addGoal();"
+            />
+            <button onclick="addGoal()">Ekle</button>
+          </div>
+        </div>
+
+        <!-- NOTLAR -->
+        <div class="page" id="page-notlar">
+          <div class="page-header">
+            <div class="page-title">Notlar</div>
+            <div class="page-sub">Serbest alanlar — istediğini yaz.</div>
+          </div>
+          <div class="notes-area" id="notes-area"></div>
+        </div>
+
+        <!-- DENEMELER -->
+        <div class="page" id="page-denemeler">
+          <div
+            class="page-header"
+            style="
+              display: flex;
+              align-items: flex-start;
+              justify-content: space-between;
+              flex-wrap: wrap;
+              gap: 12px;
+            "
+          >
+            <div>
+              <div class="page-title">Denemeler</div>
+              <div class="page-sub">
+                Her deneme için doğru, yanlış, boş gir — net otomatik
+                hesaplanır.
+              </div>
+            </div>
+            <div style="display: flex; gap: 8px; flex-wrap: wrap">
+              <button class="deneme-new-btn" onclick="newDeneme('TYT')">
+                + TYT Denemesi
+              </button>
+              <button class="deneme-new-btn ayt" onclick="newDeneme('AYT')">
+                + AYT Denemesi
+              </button>
+            </div>
+          </div>
+          <div id="denemeler-list"></div>
+        </div>
+      </main>
+    </div>
+
+    <!-- ALAN MODAL -->
+    <div class="modal-bg" id="alan-modal-bg">
+      <div class="modal" style="width: 400px">
+        <h3 style="margin-bottom: 8px">AYT Alan Seç</h3>
+        <p style="font-size: 12px; color: var(--muted); margin-bottom: 20px">
+          Hangi alan sınavına giriyorsun?
+        </p>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px">
+          <button class="alan-btn" onclick="selectAlan('SAY')">
+            <div class="alan-btn-title">Sayısal</div>
+            <div class="alan-btn-sub">Mat · Geo · Fiz · Kim · Bio</div>
+            <div class="alan-btn-total">80 soru</div>
+          </button>
+          <button class="alan-btn" onclick="selectAlan('EA')">
+            <div class="alan-btn-title">Eşit Ağırlık</div>
+            <div class="alan-btn-sub">Mat · Geo · Edeb · Tar · Coğ</div>
+            <div class="alan-btn-total">80 soru</div>
+          </button>
+          <button class="alan-btn" onclick="selectAlan('SÖZ')">
+            <div class="alan-btn-title">Sözel</div>
+            <div class="alan-btn-sub">Edeb · Tar · Coğ · Fel · Din</div>
+            <div class="alan-btn-total">80 soru</div>
+          </button>
+          <button class="alan-btn" onclick="selectAlan('DİL')">
+            <div class="alan-btn-title">Dil</div>
+            <div class="alan-btn-sub">Yabancı Dil</div>
+            <div class="alan-btn-total">80 soru</div>
+          </button>
+        </div>
+        <button
+          class="btn-cancel"
+          style="margin-top: 16px; width: 100%"
+          onclick="closeAlanModal()"
+        >
+          İptal
+        </button>
+      </div>
+    </div>
+
+    <!-- MODAL -->
+    <div class="modal-bg" id="modal-bg">
+      <div class="modal">
+        <div
+          style="
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+          "
+        >
+          <h3 style="margin: 0">Ders Ekle</h3>
+          <span
+            id="modal-day-display"
+            style="
+              font-family: &quot;DM Mono&quot;, monospace;
+              font-size: 11px;
+              color: var(--muted);
+              background: var(--bg);
+              padding: 4px 10px;
+              border-radius: 6px;
+            "
+          ></span>
+        </div>
+        <div class="form-row">
+          <label>Başlangıç Saati</label>
+          <input
+            type="text"
+            id="modal-start-time"
+            placeholder="09:30"
+            style="
+              font-family: &quot;DM Mono&quot;, monospace;
+              font-size: 15px;
+              letter-spacing: 1px;
+            "
+          />
+          <div
+            style="display: flex; gap: 5px; flex-wrap: wrap; margin-top: 8px"
+          >
+            <button class="quick-time-btn" onclick="setModalTime('07:00')">
+              07:00
+            </button>
+            <button class="quick-time-btn" onclick="setModalTime('08:00')">
+              08:00
+            </button>
+            <button class="quick-time-btn" onclick="setModalTime('09:00')">
+              09:00
+            </button>
+            <button class="quick-time-btn" onclick="setModalTime('10:00')">
+              10:00
+            </button>
+            <button class="quick-time-btn" onclick="setModalTime('11:00')">
+              11:00
+            </button>
+            <button class="quick-time-btn" onclick="setModalTime('13:00')">
+              13:00
+            </button>
+            <button class="quick-time-btn" onclick="setModalTime('14:00')">
+              14:00
+            </button>
+            <button class="quick-time-btn" onclick="setModalTime('15:00')">
+              15:00
+            </button>
+            <button class="quick-time-btn" onclick="setModalTime('16:00')">
+              16:00
+            </button>
+            <button class="quick-time-btn" onclick="setModalTime('17:00')">
+              17:00
+            </button>
+            <button class="quick-time-btn" onclick="setModalTime('18:00')">
+              18:00
+            </button>
+            <button class="quick-time-btn" onclick="setModalTime('19:00')">
+              19:00
+            </button>
+            <button class="quick-time-btn" onclick="setModalTime('20:00')">
+              20:00
+            </button>
+            <button class="quick-time-btn" onclick="setModalTime('21:00')">
+              21:00
+            </button>
+          </div>
+        </div>
+        <div class="form-row">
+          <label>Sınav Türü</label>
+          <div class="form-type">
+            <button
+              class="type-btn sel-tyt"
+              id="type-tyt"
+              onclick="selectType('tyt')"
+            >
+              TYT
+            </button>
+            <button class="type-btn" id="type-ayt" onclick="selectType('ayt')">
+              AYT
+            </button>
+          </div>
+        </div>
+        <div class="form-row">
+          <label>Ders</label>
+          <select id="modal-subject"></select>
+        </div>
+        <div class="form-row">
+          <label>Konu (opsiyonel)</label>
+          <input
+            type="text"
+            id="modal-topic"
+            placeholder="ör. Türev Uygulamaları"
+          />
+        </div>
+        <div class="form-row">
+          <label>Süre (saat)</label>
+          <input
+            type="number"
+            id="modal-hours"
+            value="1"
+            min="0.5"
+            max="8"
+            step="0.5"
+          />
+        </div>
+        <div class="modal-actions">
+          <button class="btn-cancel" onclick="closeModal()">İptal</button>
+          <button class="btn-save" onclick="saveCell()">Kaydet</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- CONFIRM MODAL -->
+    <div class="modal-bg" id="confirm-modal-bg">
+      <div class="modal" style="width: 320px; text-align: center">
+        <div style="font-size: 28px; margin-bottom: 12px">🗑️</div>
+        <h3 style="margin-bottom: 8px">Planı Sıfırla</h3>
+        <p style="font-size: 13px; color: var(--muted); margin-bottom: 24px">
+          Tüm dersler ve saatler silinecek.<br />Bu işlem geri alınamaz.
+        </p>
+        <div style="display: flex; gap: 10px">
+          <button class="btn-cancel" style="flex: 1" onclick="cancelReset()">
+            Vazgeç
+          </button>
+          <button
+            class="btn-save"
+            style="background: var(--accent)"
+            onclick="confirmReset()"
+          >
+            Sıfırla
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+      // ══════════════════════════════════════════
+      // GÜVENLİK: Kullanıcı girdisi sanitizasyonu
+      // ══════════════════════════════════════════
+
+      // HTML özel karakterlerini escape eder — XSS'i önler
+      function esc(str) {
+        if (str === null || str === undefined) return "";
+        return String(str)
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#x27;")
+          .replace(/\//g, "&#x2F;");
+      }
+
+      // Metin girdisini temizler: uzunluk sınırı + zararlı karakterler
+      function sanitizeInput(str, maxLen = 200) {
+        if (!str) return "";
+        return String(str).trim().slice(0, maxLen);
+      }
+
+      // Sayısal girdi doğrulama
+      function safeNum(val, min = 0, max = 99999, fallback = 0) {
+        const n = parseFloat(val);
+        if (isNaN(n)) return fallback;
+        return Math.min(max, Math.max(min, n));
+      }
+
+      // ══════════════════════════════════════════
+      // DATA
+      const DAYS = ["Pzt", "Sal", "Çar", "Per", "Cum", "Cmt", "Paz"];
+      // TIMES artik state.timeSlots['0'..'6'] icinde tutulur
+
+      const TYT_SUBJECTS = [
+        "Türkçe",
+        "Matematik",
+        "Geometri",
+        "Tarih",
+        "Coğrafya",
+        "Felsefe",
+        "Din Kültürü",
+        "Fizik",
+        "Kimya",
+        "Biyoloji",
+      ];
+      const AYT_SUBJECTS = {
+        EA: [
+          "Matematik",
+          "Geometri",
+          "Türk Dili ve Edebiyatı",
+          "Tarih-1",
+          "Coğrafya-1",
+          "Tarih-2",
+          "Coğrafya-2",
+          "Felsefe Grubu",
+          "Din Kültürü",
+        ],
+        SAY: ["Matematik", "Geometri", "Fizik", "Kimya", "Biyoloji"],
+        SÖZ: [
+          "Türk Dili ve Edebiyatı",
+          "Tarih-1",
+          "Coğrafya-1",
+          "Tarih-2",
+          "Coğrafya-2",
+          "Felsefe Grubu",
+          "Din Kültürü",
+        ],
+        DIL: ["İngilizce", "Almanca", "Fransızca"],
+      };
+
+      const TOPICS = {
+        Matematik: [
+          "Sayılar",
+          "Denklemler",
+          "Fonksiyonlar",
+          "Polinomlar",
+          "Logaritma",
+          "Trigonometri",
+          "Türev",
+          "İntegral",
+        ],
+        Fizik: [
+          "Kuvvet ve Hareket",
+          "Enerji",
+          "Elektrik",
+          "Manyetizma",
+          "Optik",
+          "Modern Fizik",
+        ],
+        Kimya: [
+          "Mol Hesabı",
+          "Asit-Baz",
+          "Kimyasal Denge",
+          "Organik Kimya",
+          "Elektrokimya",
+        ],
+        Biyoloji: [
+          "Hücre",
+          "Genetik",
+          "Evrim",
+          "Ekosistem",
+          "İnsan Fizyolojisi",
+        ],
+        Türkçe: [
+          "Sözcük Türleri",
+          "Cümle Yapısı",
+          "Anlam Bilgisi",
+          "Paragraf",
+          "Yazım Kuralları",
+        ],
+        Tarih: [
+          "Osmanlı",
+          "Kurtuluş Savaşı",
+          "Atatürk İlkeleri",
+          "Dünya Tarihi",
+        ],
+        Coğrafya: ["Fiziki Coğrafya", "Beşeri Coğrafya", "Türkiye Coğrafyası"],
+      };
+
+      // STATE
+      // localStorage güvenli okuma
+      let state;
+      try {
+        const raw = localStorage.getItem("yks-state");
+        state = raw ? JSON.parse(raw) : null;
+        if (typeof state !== "object" || state === null) state = null;
+      } catch (e) {
+        console.warn("localStorage okuma hatası, sıfırlanıyor:", e);
+        state = null;
+      }
+      state = state || {
+        schedule: {},
+        topics: {},
+        goals: [],
+        notes: { tyt: "", ayt: "", strateji: "", motivasyon: "" },
+        weekView: "tyt",
+        denemeler: [],
+        timeSlots: {},
+      };
+      if (!state.denemeler) state.denemeler = [];
+      if (!state.timeSlots) state.timeSlots = {};
+      // Her gün için varsayılan slotlar (ilk açılışta)
+      for (let i = 0; i < 7; i++) {
+        if (!state.timeSlots[i])
+          state.timeSlots[i] = ["09:00", "11:00", "14:00", "16:00", "19:00"];
+      }
+
+      let currentCell = null;
+      let currentType = "tyt";
+      let currentAytGroup = "SAY";
+
+      function save() {
+        try {
+          const data = JSON.stringify(state);
+          // 5MB localStorage limiti kontrolü
+          if (data.length > 4.5 * 1024 * 1024) {
+            toast("⚠️ Veri çok büyük, bazı veriler kaydedilemeyebilir.");
+            return;
+          }
+          localStorage.setItem("yks-state", data);
+        } catch (e) {
+          console.warn("Kayıt hatası:", e);
+          toast("⚠️ Veriler kaydedilemedi.");
+        }
+      }
+
+      function toast(msg) {
+        const t = document.getElementById("toast");
+        t.textContent = msg;
+        t.classList.add("show");
+        setTimeout(() => t.classList.remove("show"), 2000);
+      }
+
+      // PAGES
+      function showPage(id, btn) {
+        document
+          .querySelectorAll(".page")
+          .forEach((p) => p.classList.remove("active"));
+        document.getElementById("page-" + id).classList.add("active");
+        document
+          .querySelectorAll(".nav-btn")
+          .forEach((b) => b.classList.remove("active"));
+        btn.classList.add("active");
+        if (id === "konular") renderSubjects();
+        if (id === "hedefler") renderGoals();
+        if (id === "notlar") renderNotes();
+        if (id === "denemeler") renderDenemeler();
+        if (id === "istatistik") renderStats();
+      }
+
+      // WEEKLY GRID
+      function switchWeekView(view, btn) {
+        state.weekView = view;
+        document.querySelectorAll(".tab-btn").forEach((b) => {
+          b.classList.remove("active", "tyt", "ayt");
+        });
+        btn.classList.add("active");
+        if (view === "tyt") btn.classList.add("tyt");
+        else if (view === "ayt") btn.classList.add("ayt");
+        save();
+        renderGrid();
+      }
+
+      function renderGrid() {
+        const grid = document.getElementById("weekly-grid");
+
+        // Tüm saatleri birleştir, sırala, benzersiz yap
+        const allTimes = [
+          ...new Set(Object.values(state.timeSlots).flat()),
+        ].sort();
+
+        let html = `<div class="week-grid-wrap">`;
+        // Her gün için sütun
+        DAYS.forEach((day, di) => {
+          const slots = (state.timeSlots[di] || []).slice().sort();
+          html += `<div class="day-col">
+      <div class="day-col-header">
+        <span class="day-name">${day}</span>
+        <button class="add-slot-btn" onclick="openModal(${di})" title="Ders ekle">+</button>
+      </div>
+      <div class="day-slots">`;
+
+          if (slots.length === 0) {
+            html += `<div class="day-empty" onclick="openModal(${di})">+ Ders Ekle</div>`;
+          }
+
+          slots.forEach((time) => {
+            const key = `${di}-${time}`;
+            const entry = state.schedule[key];
+            const show =
+              !entry ||
+              state.weekView === "all" ||
+              (entry && entry.type === state.weekView);
+
+            html += `<div class="slot-row">`;
+            html += `<div class="slot-time">
+        <span>${time}</span>
+        <button class="slot-del-time" onclick="removeSlot(${di},'${time}')" title="Saati sil">×</button>
+      </div>`;
+
+            if (entry && show) {
+              html += `<div class="cell filled-${entry.type} ${entry.done ? "done" : ""}" onclick="toggleDone('${key}')">
+          <div class="cell-subject" style="color:var(--${entry.type})">${esc(entry.subject)}</div>
+          ${entry.topic ? `<div class="cell-topic">${esc(entry.topic)}</div>` : ""}
+          ${entry.hours ? `<div class="cell-hours">${entry.hours}s</div>` : ""}
+          ${entry.done ? '<div class="done-mark">✓</div>' : ""}
+          <button class="del-btn" onclick="event.stopPropagation();deleteCell('${key}')">×</button>
+        </div>`;
+            } else if (!entry) {
+              html += `<div class="cell cell-empty" onclick="openModal(${di},'${time}')">
+          <span class="cell-plus">+</span>
+        </div>`;
+            } else {
+              // var ama filtre dışı
+              html += `<div class="cell" style="background:var(--bg);border-color:var(--bg);cursor:default"></div>`;
+            }
+            html += `</div>`;
+          });
+
+          html += `</div></div>`;
+        });
+
+        html += `</div>`; // week-grid-wrap
+        grid.innerHTML = html;
+        updateStats();
+      }
+
+      // Saat slotları artık ders ekleme modalından yönetiliyor
+
+      function removeSlot(dayIdx, time) {
+        state.timeSlots[dayIdx] = (state.timeSlots[dayIdx] || []).filter(
+          (t) => t !== time,
+        );
+        // O saatteki dersi de sil
+        const key = `${dayIdx}-${time}`;
+        delete state.schedule[key];
+        save();
+        renderGrid();
+      }
+
+      function toggleDone(key) {
+        if (!state.schedule[key]) return;
+        state.schedule[key].done = !state.schedule[key].done;
+        save();
+        renderGrid();
+      }
+
+      function deleteCell(key) {
+        delete state.schedule[key];
+        save();
+        renderGrid();
+        toast("Ders silindi.");
+      }
+
+      // MODAL
+      function openModal(dayIdx, existingTime) {
+        currentCell = { dayIdx, time: existingTime || null };
+        currentType = state.weekView === "ayt" ? "ayt" : "tyt";
+        updateModalType();
+        document.getElementById("modal-topic").value = "";
+        document.getElementById("modal-hours").value = 1;
+        document.getElementById("modal-start-time").value = existingTime || "";
+        document.getElementById("modal-day-display").textContent = DAYS[dayIdx];
+        document.getElementById("modal-bg").classList.add("open");
+        setTimeout(() => {
+          if (!existingTime)
+            document.getElementById("modal-start-time").focus();
+        }, 100);
+      }
+
+      function setModalTime(t) {
+        document.getElementById("modal-start-time").value = t;
+      }
+
+      function closeModal() {
+        document.getElementById("modal-bg").classList.remove("open");
+      }
+
+      function selectType(t) {
+        currentType = t;
+        updateModalType();
+      }
+
+      function updateModalType() {
+        document.getElementById("type-tyt").className =
+          "type-btn" + (currentType === "tyt" ? " sel-tyt" : "");
+        document.getElementById("type-ayt").className =
+          "type-btn" + (currentType === "ayt" ? " sel-ayt" : "");
+        const sel = document.getElementById("modal-subject");
+        const list =
+          currentType === "tyt"
+            ? TYT_SUBJECTS
+            : [...new Set(Object.values(AYT_SUBJECTS).flat())];
+        sel.innerHTML = list.map((s) => `<option>${s}</option>`).join("");
+      }
+
+      function saveCell() {
+        const raw = document.getElementById("modal-start-time").value.trim();
+        if (!raw) {
+          toast("Lütfen bir başlangıç saati gir.");
+          return;
+        }
+        // Esnek format: 9, 9:00, 09:00, 930, 9:30 hepsi kabul
+        let time = parseTimeInput(raw);
+        if (!time) {
+          toast("Geçersiz saat — örn: 09:30");
+          return;
+        }
+
+        const di = currentCell.dayIdx;
+        // Eski time'dan farklıysa eski slot'u temizle
+        if (currentCell.time && currentCell.time !== time) {
+          delete state.schedule[`${di}-${currentCell.time}`];
+          state.timeSlots[di] = (state.timeSlots[di] || []).filter(
+            (t) => t !== currentCell.time,
+          );
+        }
+        // Slot ekle
+        if (!state.timeSlots[di]) state.timeSlots[di] = [];
+        if (!state.timeSlots[di].includes(time)) state.timeSlots[di].push(time);
+
+        const key = `${di}-${time}`;
+        state.schedule[key] = {
+          type: currentType,
+          subject: document.getElementById("modal-subject").value,
+          topic: document.getElementById("modal-topic").value,
+          hours: parseFloat(document.getElementById("modal-hours").value) || 1,
+          done: false,
+        };
+        closeModal();
+        save();
+        renderGrid();
+        toast("Ders eklendi!");
+      }
+
+      function parseTimeInput(raw) {
+        raw = raw.replace(".", ":").trim();
+        // HH:MM veya H:MM
+        let m = raw.match(/^([0-1]?[0-9]|2[0-3]):([0-5][0-9])$/);
+        if (m) return m[1].padStart(2, "0") + ":" + m[2];
+        // HHMM (4 rakam)
+        m = raw.match(/^([0-1]?[0-9]|2[0-3])([0-5][0-9])$/);
+        if (m) return m[1].padStart(2, "0") + ":" + m[2];
+        // Sadece saat (H veya HH)
+        m = raw.match(/^([0-1]?[0-9]|2[0-3])$/);
+        if (m) return m[1].padStart(2, "0") + ":00";
+        return null;
+      }
+
+      // ─────────────────────────────────────────
+      // İSTATİSTİK
+      // ─────────────────────────────────────────
+
+      function renderStats() {
+        const container = document.getElementById("stats-content");
+        const entries = Object.entries(state.schedule || {});
+
+        if (entries.length === 0) {
+          container.innerHTML = `<div class="stats-empty"><span>📊</span>Henüz plan girişi yok.<br>Haftalık çizelgene ders ekle.</div>`;
+          return;
+        }
+
+        // ── Veri hazırla ──
+        const DAYS_FULL = ["Pzt", "Sal", "Çar", "Per", "Cum", "Cmt", "Paz"];
+        let totalH = 0,
+          tytH = 0,
+          aytH = 0,
+          doneCount = 0,
+          totalSessions = entries.length;
+        const perDay = Array(7)
+          .fill(0)
+          .map(() => ({ tyt: 0, ayt: 0, total: 0 }));
+        const perSubject = {};
+        const perDayDone = Array(7)
+          .fill(0)
+          .map(() => ({ done: 0, total: 0 }));
+
+        entries.forEach(([key, e]) => {
+          const di = parseInt(key.split("-")[0]);
+          const h = Number(e.hours) || 0;
+          totalH += h;
+          if (e.type === "tyt") {
+            tytH += h;
+            perDay[di].tyt += h;
+          } else {
+            aytH += h;
+            perDay[di].ayt += h;
+          }
+          perDay[di].total += h;
+          if (!perSubject[e.subject])
+            perSubject[e.subject] = { h: 0, type: e.type };
+          perSubject[e.subject].h += h;
+          perDayDone[di].total++;
+          if (e.done) {
+            doneCount++;
+            perDayDone[di].done++;
+          }
+        });
+
+        const donePct = Math.round((doneCount / totalSessions) * 100);
+        const avgPerDay = (totalH / 7).toFixed(1);
+        const busiestDayIdx = perDay.reduce(
+          (best, d, i) => (d.total > perDay[best].total ? i : best),
+          0,
+        );
+        const busiestDay = DAYS_FULL[busiestDayIdx];
+        const topSubject = Object.entries(perSubject).sort(
+          (a, b) => b[1].h - a[1].h,
+        )[0];
+
+        // Renk paleti
+        const PALETTE = [
+          "#2d5a27",
+          "#1a3a6b",
+          "#c94a1e",
+          "#d97706",
+          "#7c3aed",
+          "#0891b2",
+          "#be185d",
+          "#15803d",
+          "#9333ea",
+          "#b45309",
+          "#0f766e",
+          "#dc2626",
+        ];
+        const subjects = Object.keys(perSubject).sort(
+          (a, b) => perSubject[b].h - perSubject[a].h,
+        );
+        const subColors = {};
+        subjects.forEach(
+          (s, i) => (subColors[s] = PALETTE[i % PALETTE.length]),
+        );
+
+        // ── HTML ──
+        container.innerHTML = `
+    <!-- KPI kartlar -->
+    <div class="kpi-row">
+      <div class="kpi-card">
+        <div class="kpi-icon">⏱</div>
+        <div class="kpi-val">${totalH.toFixed(1)}<span class="kpi-unit">s</span></div>
+        <div class="kpi-label">Toplam Süre</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-icon" style="color:var(--tyt)">T</div>
+        <div class="kpi-val" style="color:var(--tyt)">${tytH.toFixed(1)}<span class="kpi-unit">s</span></div>
+        <div class="kpi-label">TYT</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-icon" style="color:var(--ayt)">A</div>
+        <div class="kpi-val" style="color:var(--ayt)">${aytH.toFixed(1)}<span class="kpi-unit">s</span></div>
+        <div class="kpi-label">AYT</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-icon">📅</div>
+        <div class="kpi-val">${avgPerDay}<span class="kpi-unit">s/gün</span></div>
+        <div class="kpi-label">Günlük Ort.</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-icon">${donePct >= 70 ? "🟢" : donePct >= 40 ? "🟡" : "🔴"}</div>
+        <div class="kpi-val" style="color:${donePct >= 70 ? "var(--tyt)" : donePct >= 40 ? "#d97706" : "var(--accent)"}">${donePct}<span class="kpi-unit">%</span></div>
+        <div class="kpi-label">Tamamlandı</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-icon">🏆</div>
+        <div class="kpi-val kpi-val-sm">${esc(busiestDay)}</div>
+        <div class="kpi-label">En Yoğun Gün</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-icon">📚</div>
+        <div class="kpi-val kpi-val-sm">${topSubject ? topSubject[0].split(" ")[0] : "-"}</div>
+        <div class="kpi-label">En Çok Çalışılan</div>
+      </div>
+    </div>
+
+    <!-- Grafikler -->
+    <div class="charts-row">
+      <div class="chart-card chart-card-wide">
+        <div class="chart-card-title">Günlük Toplam Çalışma Süresi</div>
+        <canvas id="c-daily-total" height="200"></canvas>
+        <div class="chart-legend">
+          <div class="legend-item"><div class="legend-dot" style="background:var(--tyt)"></div>TYT</div>
+          <div class="legend-item"><div class="legend-dot" style="background:var(--ayt)"></div>AYT</div>
+          <div class="legend-item"><div class="legend-dot" style="background:#c084fc"></div>Toplam</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="charts-row charts-2col">
+      <div class="chart-card">
+        <div class="chart-card-title">Ders Dağılımı (saat)</div>
+        <canvas id="c-subjects" height="200"></canvas>
+        <div class="chart-legend" id="legend-subjects"></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-card-title">TYT · AYT Dengesi</div>
+        <canvas id="c-balance" height="200"></canvas>
+        <div class="chart-legend" id="legend-balance"></div>
+      </div>
+    </div>
+
+    <div class="charts-row charts-2col">
+      <div class="chart-card">
+        <div class="chart-card-title">Günlük Tamamlanma Oranı</div>
+        <canvas id="c-done" height="200"></canvas>
+      </div>
+      <div class="chart-card">
+        <div class="chart-card-title">Ders Başına Ortalama Süre</div>
+        <canvas id="c-avg" height="200"></canvas>
+      </div>
+    </div>`;
+
+        // ── Grafikleri çiz ──
+        requestAnimationFrame(() => {
+          // 1. Günlük çubuk (TYT + AYT + toplam çizgisi)
+          drawGroupedBar(
+            "c-daily-total",
+            DAYS_FULL,
+            perDay.map((d) => d.tyt),
+            perDay.map((d) => d.ayt),
+            perDay.map((d) => d.total),
+          );
+
+          // 2. Ders pasta
+          drawPie(
+            "c-subjects",
+            subjects,
+            subjects.map((s) => perSubject[s].h),
+            subjects.map((s) => subColors[s]),
+            "legend-subjects",
+          );
+
+          // 3. TYT/AYT halka
+          drawDonut2(
+            "c-balance",
+            ["TYT", "AYT"],
+            [tytH, aytH],
+            ["#2d5a27", "#1a3a6b"],
+            "legend-balance",
+            totalH.toFixed(1) + "s",
+          );
+
+          // 4. Tamamlanma yatay bar
+          drawHBar("c-done", DAYS_FULL, perDayDone);
+
+          // 5. Ders başına ortalama (sadece çalışılan dersler)
+          const avgSubjects = subjects.slice(0, 8);
+          const counts = {};
+          entries.forEach(([, e]) => {
+            counts[e.subject] = (counts[e.subject] || 0) + 1;
+          });
+          drawHBarSimple(
+            "c-avg",
+            avgSubjects,
+            avgSubjects.map((s) => perSubject[s].h / (counts[s] || 1)),
+            avgSubjects.map((s) => subColors[s]),
+          );
+        });
+      }
+
+      // ══════════════════════════════════════════
+      // GRAFİK FONKSİYONLARI
+      // ══════════════════════════════════════════
+
+      function getVar(name) {
+        return getComputedStyle(document.documentElement)
+          .getPropertyValue(name)
+          .trim();
+      }
+
+      function rrect(ctx, x, y, w, h, r) {
+        if (w <= 0 || h <= 0) return;
+        r = Math.min(r, w / 2, h / 2);
+        ctx.beginPath();
+        ctx.moveTo(x + r, y);
+        ctx.lineTo(x + w - r, y);
+        ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+        ctx.lineTo(x + w, y + h - r);
+        ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+        ctx.lineTo(x + r, y + h);
+        ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+        ctx.lineTo(x, y + r);
+        ctx.quadraticCurveTo(x, y, x + r, y);
+        ctx.closePath();
+      }
+
+      // 1. Grouped bar + line overlay
+      function drawGroupedBar(id, labels, v1, v2, vTotal) {
+        const canvas = document.getElementById(id);
+        if (!canvas) return;
+        const W = canvas.offsetWidth,
+          H = 200;
+        canvas.width = W;
+        canvas.height = H;
+        const ctx = canvas.getContext("2d");
+        const pad = { t: 16, r: 16, b: 28, l: 38 };
+        const cW = W - pad.l - pad.r,
+          cH = H - pad.t - pad.b;
+        const maxV = Math.max(...vTotal, 0.5);
+        const n = labels.length;
+        const gW = cW / n;
+        const bW = Math.max(5, gW * 0.28);
+
+        ctx.clearRect(0, 0, W, H);
+
+        // grid
+        for (let i = 0; i <= 4; i++) {
+          const y = pad.t + cH - (i / 4) * cH;
+          ctx.strokeStyle = "#e2e0d8";
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.moveTo(pad.l, y);
+          ctx.lineTo(pad.l + cW, y);
+          ctx.stroke();
+          ctx.fillStyle = "#8a8880";
+          ctx.font = "9px DM Mono,monospace";
+          ctx.textAlign = "right";
+          ctx.fillText(((maxV * i) / 4).toFixed(1), pad.l - 4, y + 3);
+        }
+
+        // bars
+        v1.forEach((a, i) => {
+          const b = v2[i];
+          const cx = pad.l + i * gW + gW / 2;
+          if (a > 0) {
+            const bh = (a / maxV) * cH;
+            ctx.fillStyle = getVar("--tyt");
+            rrect(ctx, cx - bW - 2, pad.t + cH - bh, bW, bh, 3);
+            ctx.fill();
+          }
+          if (b > 0) {
+            const bh = (b / maxV) * cH;
+            ctx.fillStyle = getVar("--ayt");
+            rrect(ctx, cx + 2, pad.t + cH - bh, bW, bh, 3);
+            ctx.fill();
+          }
+          ctx.fillStyle = "#8a8880";
+          ctx.font = "9px DM Mono,monospace";
+          ctx.textAlign = "center";
+          ctx.fillText(labels[i], cx, H - 6);
+        });
+
+        // total line
+        ctx.beginPath();
+        ctx.strokeStyle = "#c084fc";
+        ctx.lineWidth = 2.5;
+        ctx.setLineDash([]);
+        vTotal.forEach((v, i) => {
+          const cx = pad.l + i * gW + gW / 2;
+          const y = pad.t + cH - (v / maxV) * cH;
+          i === 0 ? ctx.moveTo(cx, y) : ctx.lineTo(cx, y);
+        });
+        ctx.stroke();
+        // dots
+        vTotal.forEach((v, i) => {
+          if (v === 0) return;
+          const cx = pad.l + i * gW + gW / 2,
+            y = pad.t + cH - (v / maxV) * cH;
+          ctx.beginPath();
+          ctx.arc(cx, y, 3.5, 0, Math.PI * 2);
+          ctx.fillStyle = "#c084fc";
+          ctx.fill();
+          // value label above dot
+          ctx.fillStyle = "#1a1916";
+          ctx.font = "bold 9px DM Mono,monospace";
+          ctx.textAlign = "center";
+          ctx.fillText(v.toFixed(1), cx, y - 7);
+        });
+      }
+
+      // 2. Pie
+      function drawPie(id, labels, vals, colors, legendId) {
+        const canvas = document.getElementById(id);
+        if (!canvas) return;
+        const W = canvas.offsetWidth,
+          H = 200;
+        canvas.width = W;
+        canvas.height = H;
+        const ctx = canvas.getContext("2d");
+        const total = vals.reduce((a, b) => a + b, 0);
+        if (!total) return;
+        const cx = W / 2,
+          cy = H / 2,
+          r = Math.min(W, H) / 2 - 14;
+        let angle = -Math.PI / 2;
+        ctx.clearRect(0, 0, W, H);
+        vals.forEach((v, i) => {
+          const sl = (v / total) * Math.PI * 2;
+          ctx.beginPath();
+          ctx.moveTo(cx, cy);
+          ctx.arc(cx, cy, r, angle, angle + sl);
+          ctx.closePath();
+          ctx.fillStyle = colors[i];
+          ctx.fill();
+          ctx.strokeStyle = "white";
+          ctx.lineWidth = 2;
+          ctx.stroke();
+          if (sl > 0.3) {
+            const mid = angle + sl / 2;
+            const tx = cx + Math.cos(mid) * r * 0.65,
+              ty = cy + Math.sin(mid) * r * 0.65;
+            ctx.fillStyle = "white";
+            ctx.font = "bold 9px DM Mono,monospace";
+            ctx.textAlign = "center";
+            ctx.fillText(v.toFixed(1) + "s", tx, ty + 3);
+          }
+          angle += sl;
+        });
+        const leg = document.getElementById(legendId);
+        if (leg)
+          leg.innerHTML = labels
+            .map(
+              (l, i) =>
+                `<div class="legend-item"><div class="legend-dot" style="background:${colors[i]}"></div>${l} · ${vals[i].toFixed(1)}s</div>`,
+            )
+            .join("");
+      }
+
+      // 3. Donut
+      function drawDonut2(id, labels, vals, colors, legendId, centerText) {
+        const canvas = document.getElementById(id);
+        if (!canvas) return;
+        const W = canvas.offsetWidth,
+          H = 200;
+        canvas.width = W;
+        canvas.height = H;
+        const ctx = canvas.getContext("2d");
+        const total = vals.reduce((a, b) => a + b, 0);
+        if (!total) return;
+        const cx = W / 2,
+          cy = H / 2,
+          r = Math.min(W, H) / 2 - 14,
+          inner = r * 0.52;
+        let angle = -Math.PI / 2;
+        ctx.clearRect(0, 0, W, H);
+        vals.forEach((v, i) => {
+          if (!v) return;
+          const sl = (v / total) * Math.PI * 2;
+          ctx.beginPath();
+          ctx.arc(cx, cy, r, angle, angle + sl);
+          ctx.arc(cx, cy, inner, angle + sl, angle, true);
+          ctx.closePath();
+          ctx.fillStyle = colors[i];
+          ctx.fill();
+          ctx.strokeStyle = "white";
+          ctx.lineWidth = 2;
+          ctx.stroke();
+          // percent label
+          if (sl > 0.4) {
+            const mid = angle + sl / 2;
+            const tx = cx + (Math.cos(mid) * (r + inner)) / 2,
+              ty = cy + (Math.sin(mid) * (r + inner)) / 2;
+            ctx.fillStyle = "white";
+            ctx.font = "bold 10px DM Mono,monospace";
+            ctx.textAlign = "center";
+            ctx.fillText(Math.round((v / total) * 100) + "%", tx, ty + 3);
+          }
+          angle += sl;
+        });
+        ctx.fillStyle = "#1a1916";
+        ctx.font = "bold 13px DM Mono,monospace";
+        ctx.textAlign = "center";
+        ctx.fillText(centerText, cx, cy + 5);
+        const leg = document.getElementById(legendId);
+        if (leg)
+          leg.innerHTML = labels
+            .map(
+              (l, i) =>
+                `<div class="legend-item"><div class="legend-dot" style="background:${colors[i]}"></div>${l}: ${vals[i].toFixed(1)}s · ${total ? Math.round((vals[i] / total) * 100) : 0}%</div>`,
+            )
+            .join("");
+      }
+
+      // 4. Horizontal bar (tamamlanma)
+      function drawHBar(id, labels, data) {
+        const canvas = document.getElementById(id);
+        if (!canvas) return;
+        const W = canvas.offsetWidth,
+          H = 200;
+        canvas.width = W;
+        canvas.height = H;
+        const ctx = canvas.getContext("2d");
+        ctx.clearRect(0, 0, W, H);
+        const n = labels.length;
+        const rowH = H / n;
+        const barH = Math.max(10, rowH * 0.52);
+        const labelW = 28,
+          pctW = 30,
+          trackW = W - labelW - pctW - 12;
+
+        data.forEach((d, i) => {
+          const pct = d.total > 0 ? d.done / d.total : 0;
+          const y = i * rowH + (rowH - barH) / 2;
+          // label
+          ctx.fillStyle = "#1a1916";
+          ctx.font = "bold 9px DM Mono,monospace";
+          ctx.textAlign = "right";
+          ctx.fillText(labels[i], labelW, y + barH / 2 + 3);
+          // track
+          ctx.fillStyle = "#e2e0d8";
+          rrect(ctx, labelW + 6, y, trackW, barH, barH / 2);
+          ctx.fill();
+          // fill
+          if (pct > 0) {
+            ctx.fillStyle =
+              pct >= 0.7
+                ? getVar("--tyt")
+                : pct >= 0.4
+                  ? "#d97706"
+                  : getVar("--accent");
+            rrect(ctx, labelW + 6, y, trackW * pct, barH, barH / 2);
+            ctx.fill();
+          }
+          // pct text
+          ctx.fillStyle = "#8a8880";
+          ctx.font = "9px DM Mono,monospace";
+          ctx.textAlign = "left";
+          ctx.fillText(
+            d.total > 0 ? Math.round(pct * 100) + "%" : "—",
+            labelW + trackW + 10,
+            y + barH / 2 + 3,
+          );
+        });
+      }
+
+      // 5. Horizontal bar simple (avg)
+      function drawHBarSimple(id, labels, vals, colors) {
+        const canvas = document.getElementById(id);
+        if (!canvas) return;
+        const W = canvas.offsetWidth,
+          H = 200;
+        canvas.width = W;
+        canvas.height = H;
+        const ctx = canvas.getContext("2d");
+        ctx.clearRect(0, 0, W, H);
+        const maxV = Math.max(...vals, 0.1);
+        const n = labels.length;
+        const rowH = H / n;
+        const barH = Math.max(10, rowH * 0.52);
+        const labelW = 60,
+          valW = 28,
+          trackW = W - labelW - valW - 10;
+
+        vals.forEach((v, i) => {
+          const y = i * rowH + (rowH - barH) / 2;
+          // label
+          ctx.fillStyle = "#1a1916";
+          ctx.font = "9px DM Sans,sans-serif";
+          ctx.textAlign = "right";
+          const lbl =
+            labels[i].length > 8 ? labels[i].slice(0, 8) + "…" : labels[i];
+          ctx.fillText(lbl, labelW, y + barH / 2 + 3);
+          // track
+          ctx.fillStyle = "#e2e0d8";
+          rrect(ctx, labelW + 4, y, trackW, barH, barH / 2);
+          ctx.fill();
+          // fill
+          if (v > 0) {
+            ctx.fillStyle = colors[i] || "#2d5a27";
+            rrect(ctx, labelW + 4, y, trackW * (v / maxV), barH, barH / 2);
+            ctx.fill();
+          }
+          // val
+          ctx.fillStyle = "#8a8880";
+          ctx.font = "9px DM Mono,monospace";
+          ctx.textAlign = "left";
+          ctx.fillText(
+            v.toFixed(1) + "s",
+            labelW + trackW + 8,
+            y + barH / 2 + 3,
+          );
+        });
+      }
+
+      // ─────────────────────────────────────────
+
+      function updateStats() {
+        let tytH = 0,
+          aytH = 0,
+          total = 0,
+          done = 0;
+        Object.values(state.schedule || {}).forEach((e) => {
+          if (e.type === "tyt") tytH += e.hours || 0;
+          else aytH += e.hours || 0;
+          total++;
+          if (e.done) done++;
+        });
+        document.getElementById("stat-tyt").textContent = tytH + "s";
+        document.getElementById("stat-ayt").textContent = aytH + "s";
+        document.getElementById("stat-done").textContent = total
+          ? "%" + Math.round((done / total) * 100)
+          : "%0";
+      }
+
+      // SUBJECTS
+      function renderSubjects() {
+        const grid = document.getElementById("subjects-grid");
+        const allSubjects = [
+          ...TYT_SUBJECTS.map((s) => ({ name: s, type: "tyt" })),
+          ...Object.values(AYT_SUBJECTS)
+            .flat()
+            .filter((v, i, a) => a.indexOf(v) === i)
+            .map((s) => ({ name: s, type: "ayt" })),
+        ];
+        grid.innerHTML = allSubjects
+          .map(({ name, type }) => {
+            if (!state.topics[name])
+              state.topics[name] = (TOPICS[name] || []).map((t) => ({
+                name: t,
+                done: false,
+              }));
+            const items = state.topics[name];
+            const pct = items.length
+              ? Math.round(
+                  (items.filter((t) => t.done).length / items.length) * 100,
+                )
+              : 0;
+            return `<div class="subject-card">
+      <div class="subject-card-header">
+        <div class="subject-card-title">${esc(name)}</div>
+        <div class="subject-badge badge-${type}">${type.toUpperCase()}</div>
+      </div>
+      <div class="progress-bar"><div class="progress-fill fill-${type}" style="width:${pct}%"></div></div>
+      <div class="progress-text">${items.filter((t) => t.done).length}/${items.length} konu · %${pct}</div>
+      <div class="topics-list">
+        ${items
+          .map(
+            (t, i) => `
+          <div class="topic-item ${t.done ? (type === "ayt" ? "checked-ayt" : "checked") : ""}">
+            <div class="topic-check" onclick="toggleTopic('${name.replace(/'/g, "\\'")}',${i})">${t.done ? "✓" : ""}</div>
+            <div class="topic-name" onclick="toggleTopic('${name.replace(/'/g, "\\'")}',${i})">${esc(t.name)}</div>
+            <button class="topic-del" onclick="deleteTopic('${name.replace(/'/g, "\\'")}',${i})" title="Sil">×</button>
+          </div>`,
+          )
+          .join("")}
+      </div>
+      <div class="add-topic-row">
+        <input id="ti-${name.replace(/[^a-zA-Z0-9]/g, "_")}" placeholder="Konu ekle..." onkeydown="if(event.key==='Enter')addTopic('${name.replace(/'/g, "\\'")}')">
+        <button onclick="addTopic('${name.replace(/'/g, "\\'")}')">+</button>
+      </div>
+    </div>`;
+          })
+          .join("");
+      }
+
+      function toggleTopic(subject, idx) {
+        if (!state.topics[subject] || !state.topics[subject][idx]) return;
+        state.topics[subject][idx].done = !state.topics[subject][idx].done;
+        save();
+        renderSubjects();
+      }
+
+      function addTopic(subject) {
+        const input = document.getElementById(
+          "ti-" + subject.replace(/[^a-zA-Z0-9]/g, "_"),
+        );
+        const val = input.value.trim();
+        if (!val) return;
+        state.topics[subject].push({
+          name: sanitizeInput(val, 150),
+          done: false,
+        });
+        input.value = "";
+        save();
+        renderSubjects();
+      }
+
+      function deleteTopic(subject, idx) {
+        state.topics[subject].splice(idx, 1);
+        save();
+        renderSubjects();
+      }
+
+      // GOALS
+      function renderGoals() {
+        const list = document.getElementById("goals-list");
+        if (!state.goals.length) {
+          list.innerHTML =
+            '<div style="color:var(--muted);font-size:13px;padding:10px 0">Henüz hedef eklenmedi.</div>';
+          return;
+        }
+        list.innerHTML = state.goals
+          .map(
+            (g, i) => `
+    <div class="goal-item ${g.done ? "done-goal" : ""}">
+      <div class="goal-check" onclick="toggleGoal(${i})">${g.done ? "✓" : ""}</div>
+      <div class="goal-text">${esc(g.text)}</div>
+      <button class="goal-del" onclick="deleteGoal(${i})">×</button>
+    </div>`,
+          )
+          .join("");
+      }
+
+      function addGoal() {
+        const input = document.getElementById("new-goal-input");
+        const val = input.value.trim();
+        if (!val) return;
+        state.goals.push({
+          id: Date.now(),
+          text: sanitizeInput(val, 200),
+          done: false,
+        });
+        input.value = "";
+        save();
+        renderGoals();
+      }
+
+      function toggleGoal(i) {
+        state.goals[i].done = !state.goals[i].done;
+        save();
+        renderGoals();
+      }
+
+      function deleteGoal(i) {
+        state.goals.splice(i, 1);
+        save();
+        renderGoals();
+      }
+
+      // NOTES
+      const NOTE_AREAS = [
+        { key: "tyt", title: "TYT Notları" },
+        { key: "ayt", title: "AYT Notları" },
+        { key: "strateji", title: "Strateji & Plan" },
+        { key: "motivasyon", title: "Motivasyon" },
+      ];
+
+      function renderNotes() {
+        document.getElementById("notes-area").innerHTML = NOTE_AREAS.map(
+          (n) => `
+    <div class="note-block">
+      <div class="note-block-title">${n.title}</div>
+      <textarea id="note-${n.key}" placeholder="Buraya yaz...">${esc(state.notes[n.key] || "")}</textarea>
+      <button class="save-note-btn" id="note-btn-${n.key}" onclick="saveNote('${n.key}')">Kaydet</button>
+    </div>`,
+        ).join("");
+      }
+
+      function saveNote(key) {
+        state.notes[key] = sanitizeInput(
+          document.getElementById("note-" + key).value,
+          5000,
+        );
+        save();
+        const btn = document.getElementById("note-btn-" + key);
+        btn.textContent = "Kaydedildi ✓";
+        btn.classList.add("saved");
+        setTimeout(() => {
+          btn.textContent = "Kaydet";
+          btn.classList.remove("saved");
+        }, 1500);
+      }
+
+      // ─────────────────────────────────────────
+      // DENEMELER
+      // ─────────────────────────────────────────
+
+      const TYT_DERSLER = [
+        { ad: "Türkçe", soru: 40 },
+        { ad: "Matematik", soru: 40 },
+        { ad: "Sosyal", soru: 20 },
+        { ad: "Fen", soru: 20 },
+      ];
+
+      const AYT_ALANLAR = {
+        SAY: [
+          { ad: "Matematik", soru: 30 },
+          { ad: "Geometri", soru: 10 },
+          { ad: "Fizik", soru: 14 },
+          { ad: "Kimya", soru: 13 },
+          { ad: "Biyoloji", soru: 13 },
+        ],
+        EA: [
+          { ad: "Matematik", soru: 30 },
+          { ad: "Geometri", soru: 10 },
+          { ad: "Türk Dili & Edebiyatı", soru: 24 },
+          { ad: "Tarih-1", soru: 10 },
+          { ad: "Coğrafya-1", soru: 6 },
+        ],
+        SÖZ: [
+          { ad: "Türk Dili & Edebiyatı", soru: 24 },
+          { ad: "Tarih-1", soru: 10 },
+          { ad: "Coğrafya-1", soru: 6 },
+          { ad: "Tarih-2", soru: 11 },
+          { ad: "Coğrafya-2", soru: 11 },
+          { ad: "Felsefe", soru: 12 },
+          { ad: "Din Kültürü", soru: 6 },
+        ],
+        DİL: [{ ad: "Yabancı Dil", soru: 80 }],
+      };
+
+      function newDeneme(tur) {
+        if (tur === "AYT") {
+          openAlanModal();
+          return;
+        }
+        createDeneme("TYT", null);
+      }
+
+      function openAlanModal() {
+        document.getElementById("alan-modal-bg").classList.add("open");
+      }
+
+      function closeAlanModal() {
+        document.getElementById("alan-modal-bg").classList.remove("open");
+      }
+
+      function selectAlan(alan) {
+        closeAlanModal();
+        createDeneme("AYT", alan);
+      }
+
+      function createDeneme(tur, alan) {
+        const dersler = tur === "TYT" ? TYT_DERSLER : AYT_ALANLAR[alan];
+        const label = tur === "TYT" ? "TYT" : "AYT " + alan;
+        const deneme = {
+          id: Date.now(),
+          tur,
+          alan: alan || null,
+          ad:
+            label +
+            " Denemesi " +
+            (state.denemeler.filter((d) => d.tur === tur && d.alan === alan)
+              .length +
+              1),
+          tarih: new Date().toLocaleDateString("tr-TR"),
+          dersler: dersler.map((d) => ({
+            ad: d.ad,
+            soru: d.soru,
+            d: 0,
+            y: 0,
+            b: d.soru,
+          })),
+        };
+        state.denemeler.unshift(deneme);
+        save();
+        renderDenemeler();
+        toast(label + " denemesi oluşturuldu!");
+      }
+
+      function deleteDeneme(id) {
+        state.denemeler = state.denemeler.filter((d) => d.id !== id);
+        save();
+        renderDenemeler();
+        toast("Deneme silindi.");
+      }
+
+      function calcNet(dArr) {
+        const topD = dArr.reduce((s, d) => s + (Number(d.d) || 0), 0);
+        const topY = dArr.reduce((s, d) => s + (Number(d.y) || 0), 0);
+        const topB = dArr.reduce((s, d) => s + (Number(d.b) || 0), 0);
+        const net = Math.round((topD - topY / 4) * 100) / 100;
+        return { topD, topY, topB, net };
+      }
+
+      function calcDersNet(d, y) {
+        return Math.round((Number(d) - Number(y) / 4) * 100) / 100;
+      }
+
+      function updateDenemeInput(denemeId, dersIdx, field, val) {
+        const deneme = state.denemeler.find((d) => d.id === denemeId);
+        if (!deneme) return;
+        const ders = deneme.dersler[dersIdx];
+        let parsed = safeNum(val, 0, ders.soru, 0);
+        ders[field] = parsed;
+        // d + y toplamı soru sayısını geçmesin
+        const topGir = (Number(ders.d) || 0) + (Number(ders.y) || 0);
+        if (topGir > ders.soru) {
+          if (field === "d")
+            ders.d = Math.max(0, ders.soru - (Number(ders.y) || 0));
+          else ders.y = Math.max(0, ders.soru - (Number(ders.d) || 0));
+        }
+        // b otomatik hesapla
+        ders.b = Math.max(
+          0,
+          ders.soru - (Number(ders.d) || 0) - (Number(ders.y) || 0),
+        );
+        save();
+        const dNet = calcDersNet(ders.d, ders.y);
+        const netEl = document.getElementById(`net-${denemeId}-${dersIdx}`);
+        if (netEl) {
+          netEl.textContent = dNet > 0 ? "+" + dNet : dNet;
+          netEl.className =
+            "deneme-net-cell " +
+            (dNet > 0
+              ? "net-positive"
+              : dNet < 0
+                ? "net-negative"
+                : "net-zero");
+        }
+        const bEl = document.getElementById(`b-${denemeId}-${dersIdx}`);
+        if (bEl) bEl.value = ders.b;
+        const dEl = document.getElementById(`d-${denemeId}-${dersIdx}`);
+        if (dEl) dEl.value = ders.d;
+        const yEl = document.getElementById(`y-${denemeId}-${dersIdx}`);
+        if (yEl) yEl.value = ders.y;
+        updateDenemeSummary(denemeId);
+      }
+
+      function updateDenemeTitle(denemeId, val) {
+        const deneme = state.denemeler.find((d) => d.id === denemeId);
+        if (deneme) {
+          deneme.ad = sanitizeInput(val, 100);
+          save();
+        }
+      }
+
+      function updateDenemeSummary(denemeId) {
+        const deneme = state.denemeler.find((d) => d.id === denemeId);
+        if (!deneme) return;
+        const { topD, topY, topB, net } = calcNet(deneme.dersler);
+        const el = document.getElementById("summary-" + denemeId);
+        if (!el) return;
+        el.innerHTML = summaryHTML(topD, topY, topB, net);
+      }
+
+      function summaryHTML(topD, topY, topB, net) {
+        return `
+    <div class="deneme-summary-item"><div class="s-label">Doğru</div><div class="s-val col-d">${topD}</div></div>
+    <div class="deneme-summary-item"><div class="s-label">Yanlış</div><div class="s-val col-y">${topY}</div></div>
+    <div class="deneme-summary-item"><div class="s-label">Boş</div><div class="s-val col-b">${topB}</div></div>
+    <div class="deneme-summary-item"><div class="s-label">Net</div><div class="s-val col-net">${net >= 0 ? net : net}</div></div>
+  `;
+      }
+
+      function renderDenemeler() {
+        const container = document.getElementById("denemeler-list");
+        if (!state.denemeler.length) {
+          container.innerHTML = `<div class="deneme-empty"><span>📋</span>Henüz deneme eklenmedi.<br>Yukarıdan TYT veya AYT denemesi oluştur.</div>`;
+          return;
+        }
+        container.innerHTML = state.denemeler
+          .map((deneme) => {
+            const { topD, topY, topB, net } = calcNet(deneme.dersler);
+            const turClass = deneme.tur.toLowerCase();
+            return `
+    <div class="deneme-card">
+      <div class="deneme-card-header">
+        <div class="deneme-card-left">
+          <span class="deneme-badge ${turClass}">${deneme.tur}${deneme.alan ? " · " + deneme.alan : ""}</span>
+          <input class="deneme-title-input" value="${esc(deneme.ad)}"
+            onchange="updateDenemeTitle(${deneme.id}, this.value)"
+            onblur="updateDenemeTitle(${deneme.id}, this.value)">
+          <span class="deneme-date">${deneme.tarih}</span>
+        </div>
+        <div class="deneme-meta">
+          <button class="deneme-del-btn" onclick="deleteDeneme(${deneme.id})">Sil</button>
+        </div>
+      </div>
+
+      <div class="deneme-table-wrap">
+      <table class="deneme-subjects-table">
+        <thead>
+          <tr>
+            <th>Ders</th>
+            <th>Soru</th>
+            <th>D</th>
+            <th>Y</th>
+            <th>B</th>
+            <th>Net</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${deneme.dersler
+            .map((ders, i) => {
+              const dNet = calcDersNet(ders.d, ders.y);
+              const bVal = ders.b !== undefined ? ders.b : ders.soru;
+              return `<tr>
+              <td class="deneme-subject-name">${esc(ders.ad)}</td>
+              <td style="text-align:center;font-family:'DM Mono',monospace;font-size:11px;color:var(--muted)">${ders.soru}</td>
+              <td><input class="deneme-num-input" id="d-${deneme.id}-${i}" type="number" min="0" max="${ders.soru}" value="${ders.d || 0}"
+                oninput="updateDenemeInput(${deneme.id},${i},'d',this.value)"
+                style="border-color:#bbf7d0;background:#f0fff4"></td>
+              <td><input class="deneme-num-input" id="y-${deneme.id}-${i}" type="number" min="0" max="${ders.soru}" value="${ders.y || 0}"
+                oninput="updateDenemeInput(${deneme.id},${i},'y',this.value)"
+                style="border-color:#fecaca;background:#fff5f5"></td>
+              <td><input class="deneme-num-input" id="b-${deneme.id}-${i}" type="number" min="0" max="${ders.soru}" value="${bVal}"
+                readonly tabindex="-1"
+                style="color:var(--muted);background:var(--bg);cursor:default"></td>
+              <td class="deneme-net-cell ${dNet > 0 ? "net-positive" : dNet < 0 ? "net-negative" : "net-zero"}" id="net-${deneme.id}-${i}">
+                ${dNet > 0 ? "+" + dNet : dNet}
+              </td>
+            </tr>`;
+            })
+            .join("")}
+        </tbody>
+      </table>
+      </div>
+
+      <div class="deneme-summary" id="summary-${deneme.id}">
+        ${summaryHTML(topD, topY, topB, net)}
+      </div>
+    </div>`;
+          })
+          .join("");
+      }
+
+      // ─────────────────────────────────────────
+
+      function resetPlan() {
+        document.getElementById("confirm-modal-bg").classList.add("open");
+      }
+
+      function confirmReset() {
+        document.getElementById("confirm-modal-bg").classList.remove("open");
+        state.schedule = {};
+        state.timeSlots = {};
+        for (let i = 0; i < 7; i++) state.timeSlots[i] = [];
+        save();
+        renderGrid();
+        toast("Plan sıfırlandı.");
+      }
+
+      function cancelReset() {
+        document.getElementById("confirm-modal-bg").classList.remove("open");
+      }
+
+      // ── Global hata yakalama ──
+      window.addEventListener("error", function (e) {
+        console.error("YKS Plan hatası:", e.message, e.filename, e.lineno);
+      });
+      window.addEventListener("unhandledrejection", function (e) {
+        console.error("İşlenmemiş Promise hatası:", e.reason);
+      });
+
+      // SIDEBAR TOGGLE
+      function toggleSidebar() {
+        const app = document.getElementById("app");
+        const overlay = document.getElementById("sidebar-overlay");
+        const btn = document.getElementById("toggle-btn");
+        const isMobile = window.innerWidth <= 768;
+        const willClose = !app.classList.contains("sidebar-closed");
+
+        app.classList.toggle("sidebar-closed");
+
+        if (overlay)
+          overlay.classList.toggle(
+            "active",
+            !willClose && isMobile ? false : isMobile && !willClose,
+          );
+        // overlay: mobilde açıkken göster
+        if (isMobile && overlay) {
+          overlay.classList.toggle(
+            "active",
+            !app.classList.contains("sidebar-closed"),
+          );
+        }
+
+        if (btn)
+          btn.setAttribute(
+            "aria-expanded",
+            !app.classList.contains("sidebar-closed"),
+          );
+        localStorage.setItem(
+          "sidebar-open",
+          !app.classList.contains("sidebar-closed"),
+        );
+      }
+
+      // Ekran boyutu değişince overlay'i sıfırla
+      window.addEventListener("resize", function () {
+        const overlay = document.getElementById("sidebar-overlay");
+        if (window.innerWidth > 768 && overlay)
+          overlay.classList.remove("active");
+      });
+
+      // INIT
+      // Mobilde başlangıçta sidebar kapalı, masaüstünde tercihe göre
+      const sidebarPref = localStorage.getItem("sidebar-open");
+      const isMobileInit = window.innerWidth <= 768;
+      if (isMobileInit || sidebarPref === "false") {
+        document.getElementById("app").classList.add("sidebar-closed");
+        const btn = document.getElementById("toggle-btn");
+        if (btn) btn.setAttribute("aria-expanded", "false");
+      }
+      renderGrid();
+
+      document
+        .getElementById("alan-modal-bg")
+        .addEventListener("click", function (e) {
+          if (e.target === this) closeAlanModal();
+        });
+    </script>
+  </body>
+</html>
